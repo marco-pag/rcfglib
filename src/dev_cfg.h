@@ -1,9 +1,7 @@
-/*
- * dev_cfg.h
- *
- *  Created on: 25/gen/2016
- *      Author: marco
- */
+//
+// Zynq partial reconfiguration test code
+// Marco Pagani - 2016 - marco.pag<#a#t#>outlook.com
+//
 
 #ifndef DEV_CFG_H_
 #define DEV_CFG_H_

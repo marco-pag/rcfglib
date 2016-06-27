@@ -1,9 +1,7 @@
-/*
- * stopwatch.h
- *
- *  Created on: 06/mar/2016
- *      Author: marco
- */
+//
+// Zynq partial reconfiguration test code
+// Marco Pagani - 2016 - marco.pag<#a#t#>outlook.com
+//
 
 #ifndef STOPWATCH_H_
 #define STOPWATCH_H_

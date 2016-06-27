@@ -1,9 +1,7 @@
-/*
- * hw_op_matrix_alg.h
- *
- *  Created on: 16/mar/2016
- *      Author: marco
- */
+//
+// Zynq partial reconfiguration test code
+// Marco Pagani - 2016 - marco.pag<#a#t#>outlook.com
+//
 
 #ifndef HW_OP_MATRIX_MULT_H_
 #define HW_OP_MATRIX_MULT_H_

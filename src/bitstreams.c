@@ -1,10 +1,7 @@
-/*
- * bitstreams.c
- *
- *  Created on: 02/apr/2016
- *      Author: marco
- */
-
+//
+// Zynq partial reconfiguration test code
+// Marco Pagani - 2016 - marco.pag<#a#t#>outlook.com
+//
 
 #include "stdint.h"
 #include "parameters.h"

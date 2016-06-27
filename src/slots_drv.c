@@ -1,3 +1,7 @@
+//
+// Zynq partial reconfiguration test code
+// Marco Pagani - 2016 - marco.pag<#a#t#>outlook.com
+//
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,15 +28,12 @@
 #include "task.h"
 #endif
 
+//------------------------------------------------------------------------------//
+
 //#define PRINT_LOG
-#define PRINT_LOG_OPS
+//#define PRINT_LOG_OPS
 
-#define write_reg(BaseAddress, RegOffset, Data) \
-    *(volatile unsigned int *)((BaseAddress) + (RegOffset)) = (unsigned int)(Data)
-
-#define read_reg(BaseAddress, RegOffset) \
-    *(volatile unsigned int *)((BaseAddress) + (RegOffset))
-
+//------------------------------------------------------------------------------//
 
 // Slot 0 and decoupler reg parameters
 #define	SLOT_0_DEVICE_ID		XPAR_SLOT_0_0_DEVICE_ID
@@ -57,6 +58,16 @@
 #define SLOT_1_GIE				XSLOT_1_CTRL_BUS_ADDR_GIE
 #define SLOT_1_ID				XSLOT_1_CTRL_BUS_ADDR_ID_DATA
 #define SLOT_1_DECOUPLER		XPAR_PR_DECOUPLER_SLOT_1_BASEADDR
+
+//------------------------------------------------------------------------------//
+
+#define REG_WRITE(BaseAddress, RegOffset, Data) \
+    *(volatile uint32_t *)((BaseAddress) + (RegOffset)) = (uint32_t)(Data)
+
+#define REG_READ(BaseAddress, RegOffset) \
+    *(volatile uint32_t *)((BaseAddress) + (RegOffset))
+
+//------------------------------------------------------------------------------//
 
 typedef struct Slot_Addresses_ {
 	uint32_t self_idx;
@@ -102,7 +113,7 @@ static Slot_Addresses slot1_addrs = {
 
 static Slot_Addresses *slots_addrs[NUM_SLOTS] = {&slot0_addrs, &slot1_addrs};
 
-// ---------------- Private module variables ---------------- //
+// ------------------------- Private module variables ------------------------- //
 
 // Test
 volatile static int hw_mod_return_avail_[NUM_SLOTS] = { 0 };
@@ -123,14 +134,14 @@ extern XScuGic xInterruptController;
 XScuGic xInterruptController;
 #endif
 
-// ---------------- Private functions ---------------- //
+// ----------------------------- Private functions ---------------------------- //
 static inline
 void slots_drv_run_(uint32_t slot_idx)
 {
 	uint32_t reg;
 
-	reg = read_reg(slots_addrs[slot_idx]->axi_base_addr, slots_addrs[slot_idx]->ap_crtl) & 0x80;
-	write_reg(slots_addrs[slot_idx]->axi_base_addr, slots_addrs[slot_idx]->ap_crtl, reg | 0x01);
+	reg = REG_READ(slots_addrs[slot_idx]->axi_base_addr, slots_addrs[slot_idx]->ap_crtl) & 0x80;
+	REG_WRITE(slots_addrs[slot_idx]->axi_base_addr, slots_addrs[slot_idx]->ap_crtl, reg | 0x01);
 }
 
 // Must be reentrant!
@@ -143,7 +154,7 @@ void slots_drv_isr_(uint32_t *self_idx)
 	uint32_t slot_idx = *self_idx;
 
 	// Clear the local interrupt
-	write_reg(slots_addrs[slot_idx]->axi_base_addr, slots_addrs[slot_idx]->isr, 0x1);
+	REG_WRITE(slots_addrs[slot_idx]->axi_base_addr, slots_addrs[slot_idx]->isr, 0x1);
 
 	// Result available
 	hw_mod_return_avail_[slot_idx] = 1;
@@ -174,21 +185,18 @@ void slots_drv_start_compute_(uint32_t slot_idx, const uint32_t args[], Logger *
 	int i;
 	uint32_t reg;
 
-#ifdef PRINT_LOG
-	if (logger) {
-		logger_enqueue_msg(logger, "Slots_Drv: Hw_Mod start computing \n");
-	}
-#endif
+	logger_log(	logger, LOG_LEVEL_PEDANTIC,
+				"Slots_Drv: Hw_Mod start computing \n");
 
 	// Feed arguments to the accelerator trough AXI control bus
 	for (i = 0; i < HW_OP_ARGS_SIZE; i++) {
-		write_reg(	slots_addrs[slot_idx]->axi_base_addr,
+		REG_WRITE(	slots_addrs[slot_idx]->axi_base_addr,
 					slots_addrs[slot_idx]->args + i * sizeof(args_t),
 					args[i]);
 	}
 
 	// Check if the module is ready
-	reg = read_reg(slots_addrs[slot_idx]->axi_base_addr, slots_addrs[slot_idx]->ap_crtl);
+	reg = REG_READ(slots_addrs[slot_idx]->axi_base_addr, slots_addrs[slot_idx]->ap_crtl);
 	if (reg & 0x1) {
 		print("Slots_Drv: Error: Module is not ready! \n\r");
 		exit(-1);
@@ -209,27 +217,21 @@ void slots_drv_start_compute_(uint32_t slot_idx, const uint32_t args[], Logger *
 	// Polling mode
 	if (!interrupt_enabled_[slot_idx]) {
 
-#ifdef PRINT_LOG
-		if (logger) {
-			logger_enqueue_msg(logger, "Slots_Drv: Polling mode\n");
-		}
-#endif
+		logger_log(	logger, LOG_LEVEL_PEDANTIC,
+					"Slots_Drv: Polling mode\n");
 
 		do {
-			reg = read_reg(slots_addrs[slot_idx]->axi_base_addr, slots_addrs[slot_idx]->ap_crtl);
+			reg = REG_READ(slots_addrs[slot_idx]->axi_base_addr, slots_addrs[slot_idx]->ap_crtl);
 			reg = (reg >> 1) & 0x1;
 		} while (!reg);
 
-#ifdef PRINT_LOG
-		if (logger) {
-			logger_enqueue_msg(logger, "Slots_Drv: Result received.\n\r");
-		}
-#endif
+		logger_log(	logger, LOG_LEVEL_PEDANTIC,
+					"Slots_Drv: Result received.\n\r");
 
 	}
 }
 
-// ---------------- Public functions ---------------- //
+// ----------------------------- Public functions ----------------------------- //
 int slots_drv_init_slot(uint32_t slot_idx)
 {
 	uint32_t reg;
@@ -237,12 +239,12 @@ int slots_drv_init_slot(uint32_t slot_idx)
 	if (interrupt_enabled_[slot_idx]) {
 
 		// Enable interrupt
-		reg =  read_reg(slots_addrs[slot_idx]->axi_base_addr, slots_addrs[slot_idx]->ier);
-		write_reg(slots_addrs[slot_idx]->axi_base_addr, slots_addrs[slot_idx]->ier, reg | 0x1);
+		reg =  REG_READ(slots_addrs[slot_idx]->axi_base_addr, slots_addrs[slot_idx]->ier);
+		REG_WRITE(slots_addrs[slot_idx]->axi_base_addr, slots_addrs[slot_idx]->ier, reg | 0x1);
 
 
 		// Enable global interrupt
-		write_reg(slots_addrs[slot_idx]->axi_base_addr, slots_addrs[slot_idx]->gie, 1);
+		REG_WRITE(slots_addrs[slot_idx]->axi_base_addr, slots_addrs[slot_idx]->gie, 1);
 	}
 
 	return XST_SUCCESS;
@@ -250,7 +252,7 @@ int slots_drv_init_slot(uint32_t slot_idx)
 
 uint32_t slots_drv_get_id(uint32_t slot_idx)
 {
-	return read_reg(slots_addrs[slot_idx]->axi_base_addr, slots_addrs[slot_idx]->id);
+	return REG_READ(slots_addrs[slot_idx]->axi_base_addr, slots_addrs[slot_idx]->id);
 }
 
 void slots_drv_start_op(uint32_t slot_idx, const Hw_Op *hw_op, Logger *logger)
@@ -277,74 +279,52 @@ void slots_drv_start_op(uint32_t slot_idx, const Hw_Op *hw_op, Logger *logger)
 
 void slots_drv_pre_op(const Hw_Op *hw_op, Logger *logger)
 {
-#ifdef PRINT_LOG_OPS
-	char p_string[256];
 	Stopwatch watch;
-#endif
 
 	if (hw_op->pre_op) {
 
-#ifdef PRINT_LOG_OPS
-
-		sprintf(p_string, "Slot_Drv: Hardware operation: \"%s\","
-				"reserved by task: \"%s\", pre_op started\n",
-				hw_op->name, pcTaskGetTaskName(NULL));
-
-		if (logger)
-			logger_enqueue_msg(logger, p_string);
+		logger_log(	logger, LOG_LEVEL_PEDANTIC,
+					"Slot_Drv: Hardware operation: \"%s\","
+					"reserved by task: \"%s\", pre_op started\n",
+					hw_op->name, pcTaskGetTaskName(NULL));
 
 		stopwatch_start(&watch);
-#endif
+
 		// Hw operation pre-operation
 		hw_op->pre_op(hw_op);
 
-#ifdef PRINT_LOG_OPS
 		stopwatch_stop(&watch);
 
-		sprintf(p_string, "Slot_Drv: Hardware operation: \"%s\","
-				"reserved by task: \"%s\", pre_op complete, time %.5f ms\n",
-				hw_op->name, pcTaskGetTaskName(NULL), stopwatch_get_ms(&watch));
+		logger_log(	logger, LOG_LEVEL_FULL,
+					"Slot_Drv: Hardware operation: \"%s\","
+					"reserved by task: \"%s\", pre_op complete, time %.5f ms\n",
+					hw_op->name, pcTaskGetTaskName(NULL), stopwatch_get_ms(&watch));
 
-		if (logger)
-			logger_enqueue_msg(logger, p_string);
-#endif
 	}
 }
 
 void slots_drv_post_op(const Hw_Op *hw_op, Logger *logger)
 {
-#ifdef PRINT_LOG_OPS
-	char p_string[256];
 	Stopwatch watch;
-#endif
 
 	if (hw_op->post_op) {
 
-#ifdef PRINT_LOG_OPS
-
-		sprintf(p_string, "Slot_Drv: Hardware operation: \"%s\","
-				"reserved by task: \"%s\", post_op started\n",
-				hw_op->name, pcTaskGetTaskName(NULL));
-
-		if (logger)
-			logger_enqueue_msg(logger, p_string);
+		logger_log(	logger, LOG_LEVEL_PEDANTIC,
+					"Slot_Drv: Hardware operation: \"%s\","
+					"reserved by task: \"%s\", post_op started\n",
+					hw_op->name, pcTaskGetTaskName(NULL));
 
 		stopwatch_start(&watch);
-#endif
 
 		// Hw operation post-operation
 		hw_op->post_op(hw_op);
 
-#ifdef PRINT_LOG_OPS
 		stopwatch_stop(&watch);
 
-		sprintf(p_string, "Slot_Drv: Hardware operation: \"%s\","
-				"reserved by task: \"%s\", post_op complete, time %.5f ms\n",
-				hw_op->name, pcTaskGetTaskName(NULL), stopwatch_get_ms(&watch));
-
-		if (logger)
-			logger_enqueue_msg(logger, p_string);
-#endif
+		logger_log(	logger, LOG_LEVEL_FULL,
+					"Slot_Drv: Hardware operation: \"%s\","
+					"reserved by task: \"%s\", post_op complete, time %.5f ms\n",
+					hw_op->name, pcTaskGetTaskName(NULL), stopwatch_get_ms(&watch));
 	}
 }
 
@@ -355,9 +335,9 @@ void slots_drv_decouple_slot(uint32_t slot_idx)
 	XScuGic_Disable(&xInterruptController, slots_addrs[slot_idx]->interrupt_intr);
 
 	// Enable partition decoupler (decouple reconfigurable partition)
-	write_reg(slots_addrs[slot_idx]->decoupler, 0, 1);
+	REG_WRITE(slots_addrs[slot_idx]->decoupler, 0, 1);
 
-	if (read_reg(slots_addrs[slot_idx]->decoupler, 0) != 1) {
+	if (REG_READ(slots_addrs[slot_idx]->decoupler, 0) != 1) {
 		xil_printf("Slots_Drv: Decoupler error\n");
 		exit(-1);
 	}
@@ -370,9 +350,9 @@ void slots_drv_couple_slot(uint32_t slot_idx)
 	XScuGic_Enable(&xInterruptController, slots_addrs[slot_idx]->interrupt_intr);
 
 	// Disable partition decoupler
-	write_reg(slots_addrs[slot_idx]->decoupler, 0, 0);
+	REG_WRITE(slots_addrs[slot_idx]->decoupler, 0, 0);
 
-	if (read_reg(slots_addrs[slot_idx]->decoupler, 0) != 0) {
+	if (REG_READ(slots_addrs[slot_idx]->decoupler, 0) != 0) {
 		xil_printf("Slots_Drv: Decoupler error\n");
 		exit(-1);
 	}

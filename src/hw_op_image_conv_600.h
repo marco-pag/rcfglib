@@ -1,9 +1,7 @@
-/*
- * hw_op_image_conv_600.h
- *
- *  Created on: 05/mar/2016
- *      Author: marco
- */
+//
+// Zynq partial reconfiguration test code
+// Marco Pagani - 2016 - marco.pag<#a#t#>outlook.com
+//
 
 #ifndef HW_OP_IMAGE_CONV_600_H_
 #define HW_OP_IMAGE_CONV_600_H_

@@ -1,3 +1,7 @@
+//
+// Zynq partial reconfiguration test code
+// Marco Pagani - 2016 - marco.pag<#a#t#>outlook.com
+//
 
 #ifndef HW_OP_H_
 #define HW_OP_H_

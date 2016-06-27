@@ -1,14 +1,11 @@
-/*
- * reconfig_manager.c
- *
- *  Created on: 24/feb/2016
- *      Author: marco
- */
+//
+// Zynq partial reconfiguration test code
+// Marco Pagani - 2016 - marco.pag<#a#t#>outlook.com
+//
 
 #include "xstatus.h"
 #include "xil_printf.h"
 #include "xtime_l.h"
-#include "stdio.h"
 
 #include "FreeRTOS.h"
 #include "semphr.h"		// Free RTOS semaphores
@@ -19,10 +16,6 @@
 #include "dev_cfg.h"
 #include "slots_drv.h"
 #include "reconfig_manager.h"
-
-//TODO: fix log
-//#define PRINT_LOG
-//#define PRINT_RCFG
 
 // ----------------------------------- Private Variables  ----------------------------------- //
 
@@ -48,18 +41,13 @@ int take_slot_(const Hw_Op *hw_op)
 	uint32_t slot_idx = 0;
 	uint32_t rcfg = 1;
 
-#ifdef PRINT_RCFG
 	Stopwatch watch;
-	char p_string[256];
 
-	sprintf(p_string,"Rcfg_Manager: Hardware operation: \"%s\". enqueued by task: \"%s\"\n",
+	logger_log(	logger_, LOG_LEVEL_FULL,
+			"Rcfg_Manager: Hardware operation: \"%s\". enqueued by task: \"%s\"\n",
 			hw_op->name, pcTaskGetTaskName(NULL));
 
-	if (logger_)
-		logger_enqueue_msg(logger_, p_string);
-
 	stopwatch_start(&watch);
-#endif
 
 	// Try to take a slot. Wait on the counter semaphore if there isn't one available
 	xSemaphoreTake(slots_sem, portMAX_DELAY);
@@ -91,61 +79,49 @@ int take_slot_(const Hw_Op *hw_op)
 		// Exit the "slot assignment / configuration port" critical section
 		xSemaphoreGive(slots_mutex);
 
-#ifdef PRINT_RCFG
 		stopwatch_stop(&watch);
 
-		sprintf(p_string, "Rcfg_Manager: Slot %u assigned to Hardware operation: \"%s\", reserved by task: \"%s\" "
-				"waiting time: %.5f ms. Slot already configured for the required operation! Skip reconfiguration\n",
+		logger_log(	logger_, LOG_LEVEL_FULL,
+				"Rcfg_Manager: Slot %u assigned to Hardware operation: \"%s\", "
+				"reserved by task: \"%s\" waiting time: %.5f ms. "
+				"Slot already configured for the required operation! Skip reconfiguration\n",
 				slot_idx, hw_op->name, pcTaskGetTaskName(NULL), stopwatch_get_ms(&watch));
-
-		if (logger_)
-			logger_enqueue_msg(logger_, p_string);
-#endif
 
 	// If none of the free slots contains the required module the device must be reconfigured
 	} else {
 
-#ifdef PRINT_RCFG
 		stopwatch_stop(&watch);
 
-		sprintf(p_string, "Rcfg_Manager: Slot %u assigned to Hardware operation: \"%s\", reserved by task: \"%s\" "
+		logger_log(	logger_, LOG_LEVEL_FULL,
+				"Rcfg_Manager: Slot %u assigned to Hardware operation: "
+				"\"%s\", reserved by task: \"%s\" "
 				"waiting time: %.5f ms. Begin reconfiguration...\n",
 				slot_idx, hw_op->name, pcTaskGetTaskName(NULL), stopwatch_get_ms(&watch));
 
-		if (logger_)
-			logger_enqueue_msg(logger_, p_string);
-
 		stopwatch_start(&watch);
-#endif
 
 		// Decouple slot before reconfiguration
 		slots_drv_decouple_slot(slot_idx);
 
-		probes_toogle(JF7_PIN, 1);
+		probes_pin_set(JF7_PIN);
 
 		// Begin device reconfiguration (with the slot correspondent bistream)
 		// The calling task will be suspended until the PL has been reconfigured
 		dev_cfg_transfer_bitfile(hw_op->bitstreams[slot_idx], hw_op->bitstreams_len[slot_idx]);
 
-		probes_toogle(JF7_PIN, 0);
+		probes_pin_clear(JF7_PIN);
 
 		// Re attach slot before reconfiguration
 		slots_drv_couple_slot(slot_idx);
 
-#ifdef PRINT_RCFG
 		stopwatch_stop(&watch);
-#endif
+
 		// Exit the "slot assignment / configuration port" critical section
 		xSemaphoreGive(slots_mutex);
 
-#ifdef PRINT_RCFG
-		sprintf(p_string, "Rcfg_Manager: Reconfiguration of slot %u completed in %.5f ms\n",
+		logger_log(	logger_, LOG_LEVEL_SIMPLE,
+				"Rcfg_Manager: Reconfiguration of slot %u completed in %.5f ms\n",
 				slot_idx, stopwatch_get_ms(&watch));
-
-		if (logger_)
-			logger_enqueue_msg(logger_, p_string);
-#endif
-
 	}
 
 	return slot_idx;
@@ -154,29 +130,22 @@ int take_slot_(const Hw_Op *hw_op)
 static inline
 void free_slot(int slot_idx, const Hw_Op *hw_op)
 {
-#ifdef PRINT_LOG
-	char p_string[256];
-#endif
-
 	// Enter the "slot status array" critical section
-	xSemaphoreTake(slots_mutex, portMAX_DELAY);
+	//xSemaphoreTake(slots_mutex, portMAX_DELAY);
 
 	// Mark the slot as free
 	slots_busy[slot_idx] = 0;
 
 	// Enter the "slot status array" critical section
-	xSemaphoreGive(slots_mutex);
+	//xSemaphoreGive(slots_mutex);
 
 	// Signal on the slot counter semaphore
 	xSemaphoreGive(slots_sem);
 
-#ifdef PRINT_LOG
-	sprintf(p_string, "Rcfg_Manager: Slot %u released by hardware operation: \"%s\", reserved by task: \"%s\"\n",
-				slot_idx, hw_op->name, pcTaskGetTaskName(NULL));
-
-	if (logger_)
-		logger_enqueue_msg(logger_, p_string);
-#endif
+	logger_log(	logger_, LOG_LEVEL_FULL,
+			"Rcfg_Manager: Slot %u released by hardware operation: "
+			"\"%s\", reserved by task: \"%s\"\n",
+			slot_idx, hw_op->name, pcTaskGetTaskName(NULL));
 }
 
 // ----------------------------------- Public functions ----------------------------------- //
@@ -206,9 +175,7 @@ int rcfg_manager_init(Logger *logger)
 		}
 	}
 
-#ifdef PRINT_LOG
 	xil_printf("Rcfg_Manager: Slots setup completed\n");
-#endif
 
 	// Init device configuration port
 	if (dev_cfg_init() != XST_SUCCESS) {
@@ -221,9 +188,7 @@ int rcfg_manager_init(Logger *logger)
 		return XST_FAILURE;
 	}
 
-#ifdef PRINT_LOG
 	xil_printf("Rcfg_Manager: DevC setup completed\n");
-#endif
 
 	// Init software
 	slots_mutex = xSemaphoreCreateMutex();	// Region mutex
@@ -239,9 +204,7 @@ int rcfg_manager_init(Logger *logger)
 		xil_printf("Rcfg_Manager: Error while creating counting semaphore\n");
 	}
 
-#ifdef PRINT_LOG
 	xil_printf("Rcfg_Manager: Setup complete. Ready to go!\n");
-#endif
 
 	return XST_SUCCESS;
 }
@@ -252,10 +215,6 @@ Stopwatch rcfg_manager_execute_hw_op(const Hw_Op *hw_op)
 	UBaseType_t task_priority;
 
 	Stopwatch watch;
-
-#ifdef PRINT_LOG
-	char p_string[256];
-#endif
 
 	// Perform pre computation op (if required)
 	slots_drv_pre_op(hw_op, logger_);
@@ -269,14 +228,10 @@ Stopwatch rcfg_manager_execute_hw_op(const Hw_Op *hw_op)
 	// Try to take a slot. Wait if there isn't one available
 	slot_idx = take_slot_(hw_op);
 
-#ifdef PRINT_LOG
-	sprintf(p_string, "Rcfg_Manager: Start hardware operation: \"%s\", reserved by task: \"%s\", in slot %u\n",
+	logger_log(	logger_, LOG_LEVEL_FULL,
+			"Rcfg_Manager: Start hardware operation: "
+			"\"%s\", reserved by task: \"%s\", in slot %u\n",
 			hw_op->name, pcTaskGetTaskName(NULL), slot_idx);
-
-	if (logger_) {
-		logger_enqueue_msg(logger_, p_string);
-	}
-#endif
 
 	// Begin init/computation time
 	stopwatch_start(&watch);
@@ -293,14 +248,11 @@ Stopwatch rcfg_manager_execute_hw_op(const Hw_Op *hw_op)
 	// Free the slot
 	free_slot(slot_idx, hw_op);
 
-#ifdef PRINT_LOG
-	sprintf(p_string, "Rcfg_Manager: Hardware operation: \"%s\", reserved by task: \"%s\", in slot %u completed in %.5f ms\n",
+	logger_log(	logger_, LOG_LEVEL_SIMPLE,
+			"Rcfg_Manager: Hardware operation: \"%s\", "
+			"reserved by task: \"%s\", in slot %u completed in %.5f ms\n",
 			hw_op->name, pcTaskGetTaskName(NULL), slot_idx, stopwatch_get_ms(&watch));
 
-	if (logger_) {
-		logger_enqueue_msg(logger_, p_string);
-	}
-#endif
 
 	// Restore the calling task's priority
 	vTaskPrioritySet(NULL, task_priority);

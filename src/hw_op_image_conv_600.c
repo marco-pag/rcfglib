@@ -1,3 +1,7 @@
+//
+// Zynq partial reconfiguration test code
+// Marco Pagani - 2016 - marco.pag<#a#t#>outlook.com
+//
 
 #include "xil_cache.h"
 #include "hw_op.h"
@@ -35,9 +39,6 @@ void hw_op_image_conv_post_op_600(const Hw_Op *self)
 }
 
 // ----------------------------------- Public functions ----------------------------------- //
-
-// TODO ... In a language with OO support there would be an
-// intermediate level between the abstract base class and the concrete operations classes
 
 //TODO: bistreams and hw id should be paired in a module descriptor structure
 

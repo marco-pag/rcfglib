@@ -1,9 +1,7 @@
-/*
- * reconfig_manager.h
- *
- *  Created on: 24/feb/2016
- *      Author: marco
- */
+//
+// Zynq partial reconfiguration test code
+// Marco Pagani - 2016 - marco.pag<#a#t#>outlook.com
+//
 
 #ifndef RECONFIG_MANAGER_H_
 #define RECONFIG_MANAGER_H_

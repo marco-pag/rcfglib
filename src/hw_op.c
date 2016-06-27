@@ -1,9 +1,7 @@
-/*
- * hw_op.c
- *
- *  Created on: 20/mag/2016
- *      Author: marco
- */
+//
+// Zynq partial reconfiguration test code
+// Marco Pagani - 2016 - marco.pag<#a#t#>outlook.com
+//
 
 #include "hw_op.h"
 #include "string.h"

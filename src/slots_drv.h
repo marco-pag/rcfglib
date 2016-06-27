@@ -1,9 +1,7 @@
-/*
- * slots_drv.h
- *
- *  Created on: 04/mar/2016
- *      Author: marco
- */
+//
+// Zynq partial reconfiguration test code
+// Marco Pagani - 2016 - marco.pag<#a#t#>outlook.com
+//
 
 #ifndef SLOTS_DRV_H_
 #define SLOTS_DRV_H_
