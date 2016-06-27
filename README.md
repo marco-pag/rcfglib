@@ -1,2 +1,2 @@
 # rcfglib
-Test code for a dynamic partial reconfiguration support library 
+Dynamic partial reconfiguration support library *test code*
