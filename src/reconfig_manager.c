@@ -1,7 +1,13 @@
-//
-// Zynq partial reconfiguration test code
-// Marco Pagani - 2016 - marco.pag<#a#t#>outlook.com
-//
+/*
+ * Partial reconfiguration on Zynq test code.
+ *
+ * Copyright (C) 2016, Marco Pagani, ReTiS Lab.
+ * <marco.pag(at)outlook.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+*/
 
 #include "xstatus.h"
 #include "xil_printf.h"

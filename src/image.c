@@ -1,7 +1,13 @@
-//
-// Zynq partial reconfiguration test code
-// Marco Pagani - 2016 - marco.pag<#a#t#>outlook.com
-//
+/*
+ * Partial reconfiguration on Zynq test code.
+ *
+ * Copyright (C) 2016, Marco Pagani, ReTiS Lab.
+ * <marco.pag(at)outlook.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+*/
 
 #include "image.h"
 
@@ -24,7 +30,7 @@ const int32_t sharp_kernel[5][5] = {
 const int32_t sharp_kernel_sum = 8;
 
 static inline
-uint8_t rgb_2_luma(uint32_t pixel)
+uint8_t rgb_to_luma(uint32_t pixel)
 {
 	return (uint8_t)( (RED(pixel) * 76 + GREEN(pixel) * 150 + BLUE(pixel) * 29 ) >> 8 );
 }
@@ -211,7 +217,7 @@ void image_int_sobel_w(	const uint32_t *image_in, uint32_t *image_out,
 					pix_idx = img_y * img_width + img_x;
 
 					// Get current input pixel and calculate luma component
-					pix_luma = rgb_2_luma(image_in[pix_idx]);
+					pix_luma = rgb_to_luma(image_in[pix_idx]);
 
 					// Calculate the approximations of the horizontal(w) and vertical(h) derivatives and accumulate
 					dluma_w	+= 	pix_luma * kernel_w[k_y][k_x];
@@ -293,7 +299,7 @@ void image_int_sobel(	const uint32_t *image_in, uint32_t *image_out,
 					pix_idx = img_y * img_width + img_x;
 
 					// Get current input pixel and calculate luma component
-					pix_luma = rgb_2_luma(image_in[pix_idx]);
+					pix_luma = rgb_to_luma(image_in[pix_idx]);
 
 					// Calculate the approximations of the horizontal(w) and vertical(h) derivatives and accumulate
 					dluma_w	+= 	pix_luma * kernel_w[k_y][k_x];

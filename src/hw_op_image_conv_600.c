@@ -1,7 +1,13 @@
-//
-// Zynq partial reconfiguration test code
-// Marco Pagani - 2016 - marco.pag<#a#t#>outlook.com
-//
+/*
+ * Partial reconfiguration on Zynq test code.
+ *
+ * Copyright (C) 2016, Marco Pagani, ReTiS Lab.
+ * <marco.pag(at)outlook.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+*/
 
 #include "xil_cache.h"
 #include "hw_op.h"
@@ -10,9 +16,6 @@
 #include "image.h"
 #include "hw_op_image_conv.h"
 #include "hw_op_image_conv_600.h"
-
-#define BLUR_ID 	301
-#define SHARP_ID	302
 
 // data_t and args_t are defined in the slot driver file
 
@@ -26,7 +29,7 @@ void hw_op_image_conv_pre_op_600(const Hw_Op *self)
 	// Flush data cache for data source buffers
 	Xil_DCacheFlushRange(self->args[0], IMAGE_SIZE_BYTE);
 
-	// If the kernel is specified
+	// If the kernel is specified (for testing purposes)
 	if (self->args[2])
 		Xil_DCacheFlushRange(self->args[2], KERNEL_SIZE_BYTE);
 }
@@ -50,10 +53,16 @@ void hw_op_image_conv_init_blur(Hw_Op *self, const char name[])
 
 void hw_op_image_conv_init_sharp(Hw_Op *self, const char name[])
 {
-
 	hw_op_init(self, (name != NULL ? name : "Image sharp 800x600"), bits_sharp, SHARP_ID);
 	hw_op_set_ops(self, hw_op_image_conv_pre_op_600, hw_op_image_conv_post_op_600);
 }
+
+void hw_op_image_conv_init_sobel(Hw_Op *self, const char name[])
+{
+	hw_op_init(self, (name != NULL ? name : "Image sobel 800x600"), bits_sobel, SOBEL_ID);
+	hw_op_set_ops(self, hw_op_image_conv_pre_op_600, hw_op_image_conv_post_op_600);
+}
+
 
 
 
