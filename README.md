@@ -2,9 +2,8 @@
 Partial reconfiguration on Zynq *test code*.
 
 ## Reference:
-Alessandro Biondi, Alessio Balsini, Marco Pagani, Enrico Rossi, Mauro Marinoni and Giorgio Buttazzo,
-"A Framework for Supporting Real-Time Applications on Dynamic Reconfigurable FPGAs",
-In Proceedings of the 37th IEEE Real-Time Systems Symposium (RTSS 16), Porto, Portugal,
-November 29 - December 2, 2016.
-
+Marco Pagani, Mauro Marinoni, Alessandro Biondi, Alessio Balsini and Giorgio Buttazzo,
+"Towards Real-Time Operating Systems for Heterogeneous Reconfigurable Platforms", 12th
+Annual Workshop on Operating Systems Platforms for Embedded Real-Time Applications
+(OSPERT16), in conjunction with ECRTS16, Toulouse, France, July 5, 2016.
 
